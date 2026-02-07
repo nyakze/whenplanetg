@@ -2,11 +2,12 @@
  * Live status checker for WAN Show and Notable People with adaptive polling
  *
  * Polling strategy:
- * - > 10 hours away: Check every 5 minutes
- * - 10 minutes - 10 hours away: Check every minute
+ * - > 10 hours away: Check every 1 minute
+ * - 10 minutes - 10 hours away: Check every 1 minute
  * - < 10 minutes away: Check every 30 seconds
  * - After thumbnail is updated: Check every 10 seconds (very imminent!)
- * - Once live: Check every 5 min just to verify still live
+ * - Preshow (Floatplane/Twitch live, YouTube NOT live): Check every 30 seconds
+ * - Once YouTube is live: Check every 5 minutes (just to verify still live)
  *
  * Notable People: Checked on same interval, but only when close to WAN time
  * or when explicitly enabled (checked during every poll when within 24h of WAN)
@@ -432,8 +433,8 @@ function shouldCheckNotablePeople(): boolean {
 }
 
 function calculateInterval(status: LiveStatus | null): number {
-  if (status?.isLive && status?.isWAN) {
-    logDebug('WAN is live - checking every 5 minutes');
+  if (status?.isLive && status?.isWAN && status?.platforms.youtube) {
+    logDebug('YouTube is live - checking every 5 minutes');
     return INTERVALS.LIVE;
   }
 
@@ -456,7 +457,11 @@ function calculateInterval(status: LiveStatus | null): number {
     return INTERVALS.CLOSE;
   }
 
-  // Default: check every minute
+  if (status?.isLive && status?.isWAN && !status?.platforms.youtube) {
+    logDebug('Preshow detected (Floatplane/Twitch only) - checking every 30 seconds');
+    return INTERVALS.CLOSE;
+  }
+
   logDebug('Checking every minute');
   return INTERVALS.DEFAULT;
 }
@@ -526,7 +531,7 @@ export function startLiveChecker(
   checker.callbacks = callbacks;
 
   log('Starting adaptive live checker...');
-  log('Strategy: 1min (default) → 30sec (<10min) → 10sec (thumbnail) → 5min (live)');
+  log('Strategy: 1min (default) → 30sec (<10min/thumbnail/preshow) → 5min (YouTube live)');
   log('Notable People: Checked on every poll');
 
   Promise.all([checkLiveStatus(), checkNotablePeopleStatus()]).then(
