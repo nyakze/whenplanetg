@@ -1,0 +1,36 @@
+{
+  "name": "whenplane-telegram-bot",
+  "version": "1.0.0",
+  "description": "Telegram notification bot for WAN Show schedule",
+  "main": "dist/index.js",
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "start:verbose": "node dist/index.js --verbose",
+    "dev": "tsc --watch",
+    "dev:verbose": "tsc --watch & node --watch dist/index.js --verbose",
+    "pm2:start": "pm2 start dist/index.js --name whenplane-bot",
+    "pm2:stop": "pm2 stop whenplane-bot",
+    "pm2:restart": "pm2 restart whenplane-bot",
+    "pm2:logs": "pm2 logs whenplane-bot"
+  },
+  "dependencies": {
+    "telegraf": "^4.16.3",
+    "luxon": "^3.4.4",
+    "dotenv": "^16.4.5"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "@types/luxon": "^3.4.2",
+    "typescript": "^5.3.3"
+  },
+  "keywords": [
+    "telegram",
+    "bot",
+    "wan-show",
+    "notifications"
+  ],
+  "author": "",
+  "license": "MIT"
+}
