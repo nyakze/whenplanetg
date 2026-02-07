@@ -400,6 +400,10 @@ export interface StatusChangeCallbacks {
     newStatus: NotablePeopleStatus,
     oldStatus: NotablePeopleStatus | null
   ) => void;
+  onThumbnailUploaded: (
+    newStatus: LiveStatus,
+    oldStatus: LiveStatus | null
+  ) => void;
 }
 
 export interface LiveChecker {
@@ -408,6 +412,7 @@ export interface LiveChecker {
   lastNotableStatus: NotablePeopleStatus | null;
   checkTimeout: ReturnType<typeof setTimeout> | null;
   callbacks: StatusChangeCallbacks | null;
+  lastThumbnailNew: boolean;
 }
 
 export function createLiveChecker(): LiveChecker {
@@ -417,6 +422,7 @@ export function createLiveChecker(): LiveChecker {
     lastNotableStatus: null,
     checkTimeout: null,
     callbacks: null,
+    lastThumbnailNew: false,
   };
 }
 
@@ -474,7 +480,17 @@ function scheduleNextCheck(checker: LiveChecker): void {
       checker.callbacks?.onWanStatusChange(newStatus, oldStatus);
     }
 
+    const thumbnailNewlyUploaded = newStatus.isThumbnailNew && 
+      (!oldStatus || !oldStatus.isThumbnailNew) &&
+      !newStatus.isLive;
+
+    if (thumbnailNewlyUploaded) {
+      log('📸 Thumbnail uploaded - WAN might start soon!');
+      checker.callbacks?.onThumbnailUploaded(newStatus, oldStatus);
+    }
+
     checker.lastStatus = newStatus;
+    checker.lastThumbnailNew = newStatus.isThumbnailNew || false;
 
     if (shouldCheckNotablePeople()) {
       const newNotable = await checkNotablePeopleStatus();

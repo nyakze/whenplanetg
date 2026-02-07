@@ -504,7 +504,8 @@ This is what the notification looks like:
 
 🔴 <b>WAN Show is NOW LIVE!</b> 🔴
 
-Started ${lateness} • Detected on YouTube!
+Started ${lateness}
+📺 WAN Show - Episode 123
 
 Watch now:
 • <a href="https://www.youtube.com/@LinusTechTips">YouTube</a>
@@ -605,24 +606,20 @@ function getWanLateness(): string {
 }
 
 function handleWanStatusChange(newStatus: LiveStatus, oldStatus: LiveStatus | null): void {
-  const wanJustStarted = newStatus.isLive && newStatus.isWAN && (!oldStatus || !oldStatus.isLive);
   const youtubeJustWan = newStatus.isLive && newStatus.isWAN && newStatus.platforms.youtube && (!oldStatus || !oldStatus.platforms.youtube);
+  const preShowJustStarted = newStatus.isLive && newStatus.isWAN && (newStatus.platforms.floatplane || newStatus.platforms.twitch) && (!oldStatus || !oldStatus.isLive);
 
-  if (wanJustStarted) {
-    log('🔴 WAN Show is LIVE! Notifying subscribers...');
-
-    let platform = 'a platform';
-    if (newStatus.platforms.youtube) platform = 'YouTube';
-    else if (newStatus.platforms.floatplane) platform = 'Floatplane';
-    else if (newStatus.platforms.twitch) platform = 'Twitch';
+  if (youtubeJustWan && !wasYoutubeLiveForWan) {
+    log('📺 WAN Show is on YouTube! Sending notification...');
+    wasYoutubeLiveForWan = true;
 
     const safeTitle = newStatus.title ? escapeHtml(newStatus.title) : '';
     const lateness = getWanLateness();
     const message = `
 🔴 <b>WAN Show is NOW LIVE!</b> 🔴
 
-Started ${lateness} • Detected on ${platform}
-${safeTitle ? `\n📺 ${safeTitle}\n` : ''}
+Started ${lateness}
+${safeTitle ? `📺 ${safeTitle}\n` : ''}
 Watch now:
 • <a href="https://www.youtube.com/@LinusTechTips">YouTube</a>
 • <a href="https://www.floatplane.com/channel/linustechtips">Floatplane</a>
@@ -633,29 +630,29 @@ Enjoy the show! 🎉
 
     const wanSubscribers = getSubscribersByType(subscribers, 'wan');
     sendNotification(wanSubscribers, truncateMessage(message), 'WAN');
-    log(`Notified ${wanSubscribers.length} WAN subscribers`);
+    log(`YouTube notification sent to ${wanSubscribers.length} WAN subscribers`);
   }
 
-  if (youtubeJustWan && !wasYoutubeLiveForWan) {
-    log('📺 WAN Show is now on YouTube! Sending follow-up notification...');
-    wasYoutubeLiveForWan = true;
+  if (preShowJustStarted) {
+    log('📡 Pre-show is LIVE (Floatplane/Twitch)! Notifying subscribers...');
 
+    let platform = newStatus.platforms.floatplane ? 'Floatplane' : 'Twitch';
     const safeTitle = newStatus.title ? escapeHtml(newStatus.title) : '';
-    const lateness = getWanLateness();
     const message = `
-📺 <b>WAN Show is on YouTube!</b> 📺
+📡 <b>Pre-show is LIVE!</b> 📡
 
-Started ${lateness}
+Detected on ${platform}
 ${safeTitle ? `📺 ${safeTitle}\n` : ''}
 Watch now:
-▶️ <a href="https://www.youtube.com/@LinusTechTips">YouTube</a>
+• <a href="https://www.floatplane.com/channel/linustechtips">Floatplane</a>
+• <a href="https://www.twitch.tv/linustech">Twitch</a>
 
-Enjoy the show! 🎉
+YouTube coming soon! 🎉
     `;
 
     const wanSubscribers = getSubscribersByType(subscribers, 'wan');
-    sendNotification(wanSubscribers, truncateMessage(message), 'WAN-YouTube');
-    log(`YouTube notification sent to ${wanSubscribers.length} WAN subscribers`);
+    sendNotification(wanSubscribers, truncateMessage(message), 'WAN-pre');
+    log(`Pre-show notification sent to ${wanSubscribers.length} WAN subscribers`);
   }
 
   if (newStatus.platforms.youtube) {
@@ -663,6 +660,56 @@ Enjoy the show! 🎉
   } else {
     wasYoutubeLiveForWan = false;
   }
+}
+
+function handleThumbnailUploaded(newStatus: LiveStatus, oldStatus: LiveStatus | null): void {
+  if (newStatus.isLive) return;
+
+  log('📸 Thumbnail uploaded - notifying subscribers...');
+
+  const nextWan = getNextWAN(new Date(), false);
+  const timeUntil = getTimeUntil(nextWan);
+
+  const caption = `
+📸 <b>WAN Show thumbnail uploaded!</b> 📸
+
+The thumbnail is up - showtime is getting close!
+
+⏰ Scheduled: ${timeUntil.string}
+
+Keep your eyes on /live!
+  `.trim();
+
+  const wanSubscribers = getSubscribersByType(subscribers, 'wan');
+  const thumbnailUrl = newStatus.thumbnail;
+
+  for (const userId of wanSubscribers) {
+    if (thumbnailUrl) {
+      bot.telegram.sendPhoto(userId, thumbnailUrl, {
+        caption,
+        parse_mode: 'HTML',
+      }).catch((err) => {
+        logError(`Failed to send thumbnail photo to ${userId}:`, err);
+        if (err.response?.error_code === 403) {
+          subscribers.delete(userId);
+          saveSubscriptions(subscribers);
+          log(`Removed dead subscriber: ${userId}`);
+        } else {
+          bot.telegram.sendMessage(userId, caption, { parse_mode: 'HTML' }).catch(() => {});
+        }
+      });
+    } else {
+      bot.telegram.sendMessage(userId, caption, { parse_mode: 'HTML' }).catch((err) => {
+        logError(`Failed to notify ${userId}:`, err);
+        if (err.response?.error_code === 403) {
+          subscribers.delete(userId);
+          saveSubscriptions(subscribers);
+          log(`Removed dead subscriber: ${userId}`);
+        }
+      });
+    }
+  }
+  log(`Thumbnail notification sent to ${wanSubscribers.length} WAN subscribers`);
 }
 
 function handleNotablePeopleChange(
@@ -721,6 +768,7 @@ async function main() {
   startLiveChecker(liveChecker, {
     onWanStatusChange: handleWanStatusChange,
     onNotablePeopleChange: handleNotablePeopleChange,
+    onThumbnailUploaded: handleThumbnailUploaded,
   });
 
   await bot.launch();
