@@ -1,6 +1,10 @@
 # WhenPlane Telegram Bot
 
+[![Bot](https://img.shields.io/badge/Bot-whenplanebot-blue?logo=telegram)](https://whenplanebot.t.me)
+
 A Telegram bot that tracks the WAN Show and notifies users when it **actually** goes live. Since WAN is never on time (can be ±10 hours!), this bot polls YouTube, Floatplane, and Twitch 24/7 to catch the moment they really start.
+
+> **Note**: This bot is not affiliated with, endorsed by, or associated with whenplane.com. It uses the publicly available whenplane.com API to track live status.
 
 ## Setup
 
