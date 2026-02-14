@@ -19,3 +19,7 @@ export function logDebug(message: string): void {
 export function logError(message: string, error?: unknown): void {
   console.error(message, error);
 }
+
+export function logWarn(message: string): void {
+  console.log(`[WARN] ${message}`);
+}
