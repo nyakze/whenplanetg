@@ -14,7 +14,7 @@
  */
 
 import { getNextWAN, getTimeUntil } from './timeUtils.js';
-import { log, logDebug, logError } from './logger.js';
+import { log, logDebug, logError, logWarn } from './logger.js';
 import { escapeHtml } from './security.js';
 
 const ENDPOINTS = {
@@ -161,14 +161,13 @@ function validateAggregateResponse(data: unknown): data is AggregateResponse {
   return hasYoutube && hasFloatplane && hasTwitch && hasNotablePeople;
 }
 
-export async function fetchAggregateStatus(
-  fast = false
+const RETRY_DELAY_MS = 2000; // 2 second delay before retry
+
+async function fetchAggregateWithRetry(
+  fast: boolean,
+  attempt: number = 1
 ): Promise<AggregateResponse | null> {
   try {
-    if (!fast && Date.now() - cache.lastFetch < CACHE_TIME && cache.aggregate) {
-      return cache.aggregate;
-    }
-
     const response = await fetchWithTimeout(
       `${ENDPOINTS.whenplane.aggregate}?fast=${fast}`,
       {
@@ -197,13 +196,32 @@ export async function fetchAggregateStatus(
 
     return data as AggregateResponse;
   } catch (error) {
-    if (error instanceof Error && error.name === 'AbortError') {
-      logError('Aggregate API request timed out');
+    const isTimeout = error instanceof Error && error.name === 'AbortError';
+    
+    if (isTimeout && attempt === 1) {
+      logWarn('Aggregate API request timed out, retrying in 2s...');
+      await new Promise(resolve => setTimeout(resolve, RETRY_DELAY_MS));
+      return fetchAggregateWithRetry(fast, attempt + 1);
+    }
+    
+    if (isTimeout) {
+      logWarn('Aggregate API request timed out (retry also failed)');
     } else {
       logError('Error fetching aggregate status:', error);
     }
+    
     return cache.aggregate || null;
   }
+}
+
+export async function fetchAggregateStatus(
+  fast = false
+): Promise<AggregateResponse | null> {
+  if (!fast && Date.now() - cache.lastFetch < CACHE_TIME && cache.aggregate) {
+    return cache.aggregate;
+  }
+
+  return fetchAggregateWithRetry(fast);
 }
 
 export async function checkLiveStatus(fast = false): Promise<LiveStatus> {
@@ -479,9 +497,10 @@ function scheduleNextCheck(checker: LiveChecker): void {
 
     const wentLive = newStatus.isLive && (!oldStatus || !oldStatus.isLive);
     const wanStarted = newStatus.isWAN && (!oldStatus || !oldStatus.isWAN);
+    const youtubeJustWentLive = newStatus.platforms.youtube && (!oldStatus || !oldStatus.platforms.youtube);
 
-    if (wentLive || wanStarted) {
-      log(`WAN status change: wentLive=${wentLive}, wanStarted=${wanStarted}`);
+    if (wentLive || wanStarted || youtubeJustWentLive) {
+      log(`WAN status change: wentLive=${wentLive}, wanStarted=${wanStarted}, youtubeJustWentLive=${youtubeJustWentLive}`);
       checker.callbacks?.onWanStatusChange(newStatus, oldStatus);
     }
 
