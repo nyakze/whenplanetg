@@ -615,13 +615,17 @@ function handleWanStatusChange(newStatus: LiveStatus, oldStatus: LiveStatus | nu
 
     const safeTitle = newStatus.title ? escapeHtml(newStatus.title) : '';
     const lateness = getWanLateness();
+    const videoId = newStatus.details.youtube?.videoId;
+    const youtubeLink = videoId
+      ? `https://www.youtube.com/watch?v=${videoId}`
+      : 'https://www.youtube.com/@LinusTechTips';
     const message = `
 🔴 <b>WAN Show is NOW LIVE!</b> 🔴
 
 Started ${lateness}
 ${safeTitle ? `📺 ${safeTitle}\n` : ''}
 Watch now:
-• <a href="https://www.youtube.com/@LinusTechTips">YouTube</a>
+• <a href="${youtubeLink}">YouTube</a>
 • <a href="https://www.floatplane.com/channel/linustechtips">Floatplane</a>
 • <a href="https://www.twitch.tv/linustech">Twitch</a>
 
@@ -670,44 +674,29 @@ function handleThumbnailUploaded(newStatus: LiveStatus, oldStatus: LiveStatus | 
   const nextWan = getNextWAN(new Date(), false);
   const timeUntil = getTimeUntil(nextWan);
 
+  const thumbnailUrl = newStatus.thumbnail;
   const caption = `
 📸 <b>WAN Show thumbnail uploaded!</b> 📸
 
 The thumbnail is up - showtime is getting close!
 
 ⏰ Scheduled: ${timeUntil.string}
+${thumbnailUrl ? `\n<a href="${thumbnailUrl}">View thumbnail</a>` : ''}
 
 Keep your eyes on /live!
   `.trim();
 
   const wanSubscribers = getSubscribersByType(subscribers, 'wan');
-  const thumbnailUrl = newStatus.thumbnail;
 
   for (const userId of wanSubscribers) {
-    if (thumbnailUrl) {
-      bot.telegram.sendPhoto(userId, thumbnailUrl, {
-        caption,
-        parse_mode: 'HTML',
-      }).catch((err) => {
-        logError(`Failed to send thumbnail photo to ${userId}:`, err);
-        if (err.response?.error_code === 403) {
-          subscribers.delete(userId);
-          saveSubscriptions(subscribers);
-          log(`Removed dead subscriber: ${userId}`);
-        } else {
-          bot.telegram.sendMessage(userId, caption, { parse_mode: 'HTML' }).catch(() => {});
-        }
-      });
-    } else {
-      bot.telegram.sendMessage(userId, caption, { parse_mode: 'HTML' }).catch((err) => {
-        logError(`Failed to notify ${userId}:`, err);
-        if (err.response?.error_code === 403) {
-          subscribers.delete(userId);
-          saveSubscriptions(subscribers);
-          log(`Removed dead subscriber: ${userId}`);
-        }
-      });
-    }
+    bot.telegram.sendMessage(userId, caption, { parse_mode: 'HTML' }).catch((err) => {
+      logError(`Failed to notify ${userId}:`, err);
+      if (err.response?.error_code === 403) {
+        subscribers.delete(userId);
+        saveSubscriptions(subscribers);
+        log(`Removed dead subscriber: ${userId}`);
+      }
+    });
   }
   log(`Thumbnail notification sent to ${wanSubscribers.length} WAN subscribers`);
 }
