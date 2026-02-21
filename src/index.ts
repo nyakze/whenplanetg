@@ -400,7 +400,7 @@ bot.command('live', async (ctx) => {
       }
       message += 'Watch here:\n';
       message += '▶️ <a href="https://youtube.com/@LinusTechTips">YouTube</a>\n';
-      message += '▶️ <a href="https://floatplane.com/channel/linustechtips">Floatplane</a>\n';
+      message += '▶️ <a href="https://www.floatplane.com/live/linustechtips">Floatplane</a>\n';
       message += '▶️ <a href="https://twitch.tv/linustech">Twitch</a>\n';
 
       await ctx.reply(message, { parse_mode: 'HTML' });
@@ -510,7 +510,7 @@ Started ${lateness}
 
 Watch now:
 • <a href="https://www.youtube.com/@LinusTechTips">YouTube</a>
-• <a href="https://www.floatplane.com/channel/linustechtips">Floatplane</a>
+• <a href="https://www.floatplane.com/live/linustechtips">Floatplane</a>
 • <a href="https://www.twitch.tv/linustech">Twitch</a>
 
 Enjoy the show! 🎉
@@ -627,7 +627,7 @@ Started ${lateness}
 ${safeTitle ? `📺 ${safeTitle}\n` : ''}
 Watch now:
 • <a href="${youtubeLink}">YouTube</a>
-• <a href="https://www.floatplane.com/channel/linustechtips">Floatplane</a>
+• <a href="https://www.floatplane.com/live/linustechtips">Floatplane</a>
 • <a href="https://www.twitch.tv/linustech">Twitch</a>
 
 Enjoy the show! 🎉
@@ -649,7 +649,7 @@ Enjoy the show! 🎉
 Detected on ${platform}
 ${safeTitle ? `📺 ${safeTitle}\n` : ''}
 Watch now:
-• <a href="https://www.floatplane.com/channel/linustechtips">Floatplane</a>
+• <a href="https://www.floatplane.com/live/linustechtips">Floatplane</a>
 • <a href="https://www.twitch.tv/linustech">Twitch</a>
 
 YouTube coming soon! 🎉

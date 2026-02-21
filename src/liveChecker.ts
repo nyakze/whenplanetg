@@ -311,7 +311,7 @@ export async function getDetailedStatus(): Promise<string> {
 
   message += '<b>Platform Status:</b>\n';
   message += `• <a href="https://youtube.com/@LinusTechTips">YouTube</a>: ${ytStatus}\n`;
-  message += `• <a href="https://floatplane.com/channel/linustechtips">Floatplane</a>: ${fpStatus}\n`;
+  message += `• <a href="https://www.floatplane.com/live/linustechtips">Floatplane</a>: ${fpStatus}\n`;
   message += `• <a href="https://twitch.tv/linustech">Twitch</a>: ${twStatus}\n\n`;
 
   if (liveStatus.isLive && liveStatus.isWAN) {
