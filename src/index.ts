@@ -592,7 +592,7 @@ function sendNotification(
 }
 
 function getWanLateness(): string {
-  const scheduledWAN = getNextWAN(new Date(), false);
+  const scheduledWAN = getClosestWan(new Date());
   const now = new Date();
   const diff = now.getTime() - scheduledWAN.getTime();
   const diffAbs = Math.abs(diff);
