@@ -5,6 +5,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import {
   getNextWAN,
+  getClosestWan,
   getTimeUntil,
   timeString,
   colonTimeString,
@@ -671,7 +672,7 @@ function handleThumbnailUploaded(newStatus: LiveStatus, oldStatus: LiveStatus | 
 
   log('📸 Thumbnail uploaded - notifying subscribers...');
 
-  const nextWan = getNextWAN(new Date(), false);
+  const nextWan = getClosestWan(new Date());
   const timeUntil = getTimeUntil(nextWan);
 
   const thumbnailUrl = newStatus.thumbnail;
@@ -680,10 +681,10 @@ function handleThumbnailUploaded(newStatus: LiveStatus, oldStatus: LiveStatus | 
 
 The thumbnail is up - showtime is getting close!
 
-⏰ Scheduled: ${timeUntil.string}
-${thumbnailUrl ? `\n<a href="${thumbnailUrl}">View thumbnail</a>` : ''}
+⏰ Scheduled: ${timeUntil.string}${timeUntil.late ? ' (late)' : ''}
 
 Keep your eyes on /live!
+${thumbnailUrl ? `\n${thumbnailUrl}` : ''}
   `.trim();
 
   const wanSubscribers = getSubscribersByType(subscribers, 'wan');
