@@ -497,15 +497,64 @@ bot.command('testnotif', async (ctx) => {
     return;
   }
 
-  const lateness = getWanLateness();
-  await ctx.reply(`
+  try {
+    const [status, notableInfo] = await Promise.all([
+      checkLiveStatus(),
+      getDetailedNotablePeopleStatus(),
+    ]);
+
+    const testThumbnailUrl = status.thumbnail || 'https://via.placeholder.com/1280x720.png?text=WAN+Show+Thumbnail';
+    const testLateness = getWanLateness();
+    const testTitle = status.title || 'WAN Show - Episode 123';
+
+    await ctx.reply(`
 🔔 <b>TEST: WAN Show is LIVE!</b> 🔔
 
 This is what the notification looks like:
 
 🔴 <b>WAN Show is NOW LIVE!</b> 🔴
 
-Started ${lateness}
+Started ${testLateness}
+📺 ${testTitle}
+
+Watch now:
+• <a href="https://www.youtube.com/@LinusTechTips">YouTube</a>
+• <a href="https://www.floatplane.com/live/linustechtips">Floatplane</a>
+• <a href="https://www.twitch.tv/linustech">Twitch</a>
+
+Enjoy the show! 🎉
+  `, { parse_mode: 'HTML' });
+
+    await ctx.reply(`
+📸 <b>TEST: Thumbnail Notification</b> 📸
+
+This is what the thumbnail notification looks like:
+
+📸 <b>WAN Show thumbnail uploaded!</b> 📸
+
+The thumbnail is up - showtime is getting close!
+
+🕐 Scheduled: ${getTimeUntil(getClosestWan(new Date())).string}
+
+Keep your eyes on /live!
+${testThumbnailUrl}
+  `, { parse_mode: 'HTML' });
+
+  } catch (err) {
+    logError('Failed to fetch test data:', err);
+    await ctx.reply('❌ Failed to fetch live data for test. Using placeholder data instead.');
+    
+    const testThumbnailUrl = 'https://via.placeholder.com/1280x720.png?text=WAN+Show+Thumbnail';
+    const testLateness = getWanLateness();
+    
+    await ctx.reply(`
+🔔 <b>TEST: WAN Show is LIVE!</b> 🔔
+
+This is what the notification looks like:
+
+🔴 <b>WAN Show is NOW LIVE!</b> 🔴
+
+Started ${testLateness}
 📺 WAN Show - Episode 123
 
 Watch now:
@@ -515,6 +564,22 @@ Watch now:
 
 Enjoy the show! 🎉
   `, { parse_mode: 'HTML' });
+
+    await ctx.reply(`
+📸 <b>TEST: Thumbnail Notification</b> 📸
+
+This is what the thumbnail notification looks like:
+
+📸 <b>WAN Show thumbnail uploaded!</b> 📸
+
+The thumbnail is up - showtime is getting close!
+
+🕐 Scheduled: ${getTimeUntil(getClosestWan(new Date())).string}
+
+Keep your eyes on /live!
+${testThumbnailUrl}
+  `, { parse_mode: 'HTML' });
+  }
 });
 
 bot.command('debug', async (ctx) => {
