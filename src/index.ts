@@ -537,8 +537,11 @@ The thumbnail is up - showtime is getting close!
 🕐 Scheduled: ${getTimeUntil(getClosestWan(new Date())).string}
 
 Keep your eyes on /live!
-${testThumbnailUrl}
   `, { parse_mode: 'HTML' });
+
+    if (testThumbnailUrl) {
+      await ctx.replyWithPhoto(testThumbnailUrl, { caption: 'Thumbnail preview' });
+    }
 
   } catch (err) {
     logError('Failed to fetch test data:', err);

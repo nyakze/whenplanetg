@@ -256,6 +256,8 @@ export async function checkLiveStatus(fast = false): Promise<LiveStatus> {
   } else if (twitch.isLive && twitch.isWAN) {
     title = twitch.title;
     started = twitch.started;
+  } else if (floatplane.isThumbnailNew && floatplane.thumbnail) {
+    thumbnail = floatplane.thumbnail;
   }
 
   return {
@@ -506,7 +508,8 @@ function scheduleNextCheck(checker: LiveChecker): void {
 
     const thumbnailNewlyUploaded = newStatus.isThumbnailNew && 
       (!oldStatus || !oldStatus.isThumbnailNew) &&
-      !newStatus.isLive;
+      !newStatus.isLive &&
+      newStatus.thumbnail;
 
     if (thumbnailNewlyUploaded) {
       log('📸 Thumbnail uploaded - WAN might start soon!');
